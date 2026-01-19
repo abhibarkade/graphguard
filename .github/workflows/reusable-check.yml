@@ -1,0 +1,37 @@
+name: Reusable Schema Check
+
+on:
+  workflow_call:
+    inputs:
+      schema_path:
+        required: true
+        type: string
+        description: "Path to the schema file"
+      variant_id:
+        required: true
+        type: string
+        description: "Target variant ID"
+
+jobs:
+  check-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies (if needed for scripts)
+        run: npm install -g graphql-cli # Example, replace with custom cli if built
+        
+      - name: Run Schema Check
+        run: |
+          echo "Checking schema at ${{ inputs.schema_path }} against variant ${{ inputs.variant_id }}"
+          # In real implementation:
+          # curl -X POST https://graphguard.internal/schema/check \
+          #   -H "x-variant-id: ${{ inputs.variant_id }}" \
+          #   -H "Content-Type: application/json" \
+          #   -d "{\"schema\": \"$(cat ${{ inputs.schema_path }})\"}"
