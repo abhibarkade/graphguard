@@ -1,8 +1,8 @@
 {
   "name": "graphguard",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "High-performance, enterprise-grade GraphQL Schema Registry built with NestJS, Fastify, and TypeORM.",
+  "main": "dist/main.js",
   "scripts": {
     "dev": "ts-node src/main.ts",
     "build": "tsc",
@@ -17,8 +17,15 @@
     "docker:clean": "docker-compose -f docker-compose.dev.yml down -v && docker-compose down -v"
   },
   "keywords": [],
-  "author": "",
+  "author": "Abhi Barkade",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abhibarkade/graphguard.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "type": "commonjs",
   "dependencies": {
     "@apollo/server": "^5.2.0",
