@@ -197,15 +197,6 @@ increase(graphguard_schema_deployments_total{status="failure"}[1h])
 rate(graphguard_apollo_sync_total{status="failure"}[5m])
 ```
 
-### Grafana Dashboard
-
-Create alerts and visualizations:
-
-1. **Deployment Success Rate** - Line graph showing deployment success vs failures
-2. **Validation Latency** - Heatmap of deployment duration percentiles
-3. **Schema Activity** - Bar chart of deployments per schema
-4. **Error Rate** - Alert when failure rate exceeds threshold
-
 ---
 
 ## 📚 API Documentation
