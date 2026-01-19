@@ -34,65 +34,13 @@ I architected **GraphGuard**, a centralized Schema Registry Service that acts as
 
 _Every service talked directly to Apollo. No coordination. No security._
 
-```mermaid
-graph LR
-    subgraph "Logistics Federation Monorepo"
-        Inv[Inventory Service]
-        Ship[Shipping Service]
-        Track[Tracking Service]
-    end
-
-    subgraph "External Cloud"
-        AS[Apollo Studio]
-    end
-
-    Inv -- "Direct Push (Key Exposed)" --> AS
-    Ship -- "Direct Push (Key Exposed)" --> AS
-    Track -- "Direct Push (Key Exposed)" --> AS
-
-    style Inv fill:#ffdddd,stroke:#333
-    style Ship fill:#ffdddd,stroke:#333
-    style Track fill:#ffdddd,stroke:#333
-    style AS fill:#f9f,stroke:#333
-```
+![Phase 1 Architecture - Before](docs/images/architecture_before.png)
 
 ### Phase 2: The "GraphGuard" Gateway (After)
 
 _Centralized governance. Atomic transactions. Secure secrets._
 
-```mermaid
-graph LR
-    subgraph "Logistics Federation Monorepo"
-        Inv[Inventory Service]
-        Ship[Shipping Service]
-        Track[Tracking Service]
-    end
-
-    subgraph "GraphGuard (My Solution)"
-        API[API Gateway\n(NestJS + Fastify)]
-        Auth[ApiKeyGuard\n(Security Layer)]
-        Tx[Transaction Manager\n(TypeORM)]
-        DB[(PostgreSQL\nRegistry)]
-    end
-
-    subgraph "External Cloud"
-        AS[Apollo Studio]
-    end
-
-    %% Flows
-    Inv -- "1. Deploy (Secure Token)" --> Auth
-    Ship -- "1. Deploy (Secure Token)" --> Auth
-    Track -- "1. Deploy (Secure Token)" --> Auth
-
-    Auth --> API
-    API -- "2. Persist State (Atomic)" --> Tx
-    Tx --> DB
-    Tx -- "3. Sync (Upstream Key)" --> AS
-
-    style GraphGuard fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style Auth fill:#fff9c4,stroke:#fbc02d
-    style Tx fill:#c8e6c9,stroke:#388e3c
-```
+![Phase 2 Architecture - After](docs/images/architecture_after.png)
 
 ---
 

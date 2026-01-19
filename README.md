@@ -13,16 +13,7 @@
 
 GraphGuard acts as the **central authority** for all GraphQL schema changes in a microservices ecosystem. It orchestrates the validation, persistence, and synchronization of schemas between local services and the Apollo Platform.
 
-```mermaid
-graph LR
-    CI[CI/CD Pipelines] -->|1. Push Schema (Secure)| GG[GraphGuard Registry]
-    GG -->|2. Validate & Persist| DB[(PostgreSQL)]
-    GG -->|3. Sync (Atomic)| AS[Apollo Studio]
-
-    style GG fill:#e1f5fe,stroke:#01579b
-    style DB fill:#c8e6c9,stroke:#388e3c
-    style AS fill:#f9f,stroke:#333
-```
+![GraphGuard Architecture](docs/images/architecture_after.png)
 
 ## 🚀 Key Features
 
