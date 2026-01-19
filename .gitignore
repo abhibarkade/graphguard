@@ -7,3 +7,4 @@ coverage
 .envrc
 yarn-error.log
 src/graphql/generated
+node_modules
