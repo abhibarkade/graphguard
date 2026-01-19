@@ -1,18 +1,31 @@
+# CI Workflow: Tracking Service
+#
+# This workflow handles schema validation and deployment for the Tracking microservice
+# in the logistics-federation example.
+#
+# Triggers:
+# - On PR: Validates schema changes before merge
+# - On main push: Automatically deploys validated schema
+#
+# Path filters ensure this only runs when tracking service files change
+
 name: Tracking Service CI
 
 on:
   push:
     branches: [main]
     paths:
-      - "logistics-federation/services/tracking/**"
-      - ".github/workflows/tracking-ci.yml"
+      - "logistics-federation/services/tracking/**" # Only trigger on tracking changes
+      - ".github/workflows/logistics-federation/tracking-ci.yml" # Or workflow changes
   pull_request:
     branches: [main]
     paths:
       - "logistics-federation/services/tracking/**"
-      - ".github/workflows/tracking-ci.yml"
+      - ".github/workflows/logistics-federation/tracking-ci.yml"
 
 jobs:
+  # Job 1: Schema Validation (runs on PRs only)
+  # Validates schema compatibility before allowing merge
   check-schema:
     if: github.event_name == 'pull_request'
     uses: ./.github/workflows/schema-check.yml
@@ -24,6 +37,8 @@ jobs:
       GRAPHGUARD_API_KEY: ${{ secrets.GRAPHGUARD_API_KEY }}
       GRAPHGUARD_ENDPOINT: ${{ secrets.GRAPHGUARD_ENDPOINT }}
 
+  # Job 2: Schema Deployment (runs on main branch pushes only)
+  # Automatically deploys schema after successful merge
   publish-schema:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/schema-publish.yml
@@ -31,7 +46,7 @@ jobs:
       schema_path: "logistics-federation/services/tracking/schema.graphql"
       schema_name: "tracking"
       variant_id: "current"
-      version_label: ${{ github.sha }}
+      version_label: ${{ github.sha }} # Use git commit SHA as version
     secrets:
       GRAPHGUARD_API_KEY: ${{ secrets.GRAPHGUARD_API_KEY }}
       GRAPHGUARD_ENDPOINT: ${{ secrets.GRAPHGUARD_ENDPOINT }}

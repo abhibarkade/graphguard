@@ -1,27 +1,62 @@
+# Reusable Workflow: Schema Publish
+#
+# This workflow publishes/deploys GraphQL schemas to a variant using GraphGuard's deploySchema mutation.
+# It includes automatic retry logic via the schema-publish.js script.
+#
+# Features:
+# - Deploys schema with version tracking
+# - Automatic retry with exponential backoff (3 attempts)
+# - Proper error reporting for CI/CD integration
+# - Caches dependencies for faster execution
+#
+# Usage:
+#   jobs:
+#     deploy:
+#       uses: ./.github/workflows/schema-publish.yml
+#       with:
+#         schema_path: "path/to/schema.graphql"
+#         schema_name: "my-service"
+#         variant_id: "current"
+#         version_label: ${{ github.sha }}
+#       secrets:
+#         GRAPHGUARD_API_KEY: ${{ secrets.GRAPHGUARD_API_KEY }}
+#         GRAPHGUARD_ENDPOINT: ${{ secrets.GRAPHGUARD_ENDPOINT }}
+
 name: Schema Publish
 
 on:
   workflow_call:
     inputs:
+      # Path to the GraphQL schema file to publish
       schema_path:
         required: true
         type: string
         description: "Path to the schema file"
+
+      # Name of the schema/subgraph being deployed
       schema_name:
         required: true
         type: string
         description: "Name of the schema/subgraph"
+
+      # Target variant ID to deploy to (e.g., "current", "staging", "production")
       variant_id:
         required: true
         type: string
         description: "Target variant ID"
+
+      # Version label for deployment tracking (e.g., git SHA, semantic version)
       version_label:
         required: true
         type: string
         description: "Version label for the deployment"
+
     secrets:
+      # API key for GraphGuard authentication
       GRAPHGUARD_API_KEY:
         required: true
+
+      # GraphGuard GraphQL endpoint URL
       GRAPHGUARD_ENDPOINT:
         required: true
 
@@ -29,18 +64,29 @@ jobs:
   publish-schema:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the repository code
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # Step 2: Setup Node.js environment with yarn caching
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
+          cache: "yarn" # Cache yarn dependencies for faster builds
 
+      # Step 3: Install project dependencies
+      # --frozen-lockfile ensures reproducible builds
       - name: Install Dependencies
         run: yarn install --frozen-lockfile
 
+      # Step 4: Publish schema with retry logic
+      # The schema-publish.js script will:
+      # - Load the schema file
+      # - Send deploySchema mutation to GraphGuard
+      # - Retry up to 3 times on network failures
+      # - Exit with code 0 on success, 1 on failure
+      # - Return deployment ID and status
       - name: Run Schema Publish
         run: |
           node scripts/schema-publish.js \

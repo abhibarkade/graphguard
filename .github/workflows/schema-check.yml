@@ -1,23 +1,55 @@
+# Reusable Workflow: Schema Check
+#
+# This workflow validates GraphQL schemas against a variant using GraphGuard's checkSchema mutation.
+# It includes automatic retry logic via the schema-check.js script.
+#
+# Features:
+# - Validates schema compatibility before deployment
+# - Automatic retry with exponential backoff (3 attempts)
+# - Proper error reporting for CI/CD integration
+# - Caches dependencies for faster execution
+#
+# Usage:
+#   jobs:
+#     validate:
+#       uses: ./.github/workflows/schema-check.yml
+#       with:
+#         schema_path: "path/to/schema.graphql"
+#         variant_id: "current"
+#         schema_name: "my-service"
+#       secrets:
+#         GRAPHGUARD_API_KEY: ${{ secrets.GRAPHGUARD_API_KEY }}
+#         GRAPHGUARD_ENDPOINT: ${{ secrets.GRAPHGUARD_ENDPOINT }}
+
 name: Schema Check
 
 on:
   workflow_call:
     inputs:
+      # Path to the GraphQL schema file to validate
       schema_path:
         required: true
         type: string
         description: "Path to the schema file"
+
+      # Target variant ID to validate against (e.g., "current", "staging", "production")
       variant_id:
         required: true
         type: string
         description: "Target variant ID"
+
+      # Name of the schema/subgraph for identification
       schema_name:
         required: true
         type: string
         description: "Name of the schema/subgraph"
+
     secrets:
+      # API key for GraphGuard authentication
       GRAPHGUARD_API_KEY:
         required: true
+
+      # GraphGuard GraphQL endpoint URL
       GRAPHGUARD_ENDPOINT:
         required: true
 
@@ -25,18 +57,28 @@ jobs:
   check-schema:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the repository code
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # Step 2: Setup Node.js environment with yarn caching
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
+          cache: "yarn" # Cache yarn dependencies for faster builds
 
+      # Step 3: Install project dependencies
+      # --frozen-lockfile ensures reproducible builds
       - name: Install Dependencies
         run: yarn install --frozen-lockfile
 
+      # Step 4: Run schema validation with retry logic
+      # The schema-check.js script will:
+      # - Load the schema file
+      # - Send checkSchema mutation to GraphGuard
+      # - Retry up to 3 times on network failures
+      # - Exit with code 0 on success, 1 on failure
       - name: Run Schema Check
         run: |
           node scripts/schema-check.js \

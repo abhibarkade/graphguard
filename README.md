@@ -1,534 +1,517 @@
-# GraphGuard 🛡️
+# GraphGuard - Production-Ready GraphQL Schema Registry
 
-**A Production-Grade Schema Registry & Governance Gateway for Federated GraphQL Microservices**
-
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/abhibarkade/graphguard)
+[![CI](https://github.com/abhibarkade/graphguard/workflows/CI/badge.svg)](https://github.com/abhibarkade/graphguard/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tech Stack: NestJS](https://img.shields.io/badge/Framework-NestJS-red)](https://nestjs.com/)
-[![Database: PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue)](https://www.postgresql.org/)
+
+**GraphGuard** is an enterprise-grade, production-ready GraphQL Schema Registry built with NestJS, Fastify, and TypeORM. It provides centralized schema management, validation, versioning, and observability for GraphQL Federation architectures.
+
+## 🎯 Key Features
+
+- **🔐 API Key Authentication** - Secure schema operations with API key-based auth
+- **📊 Schema Versioning** - Track and manage schema versions with deployment history
+- **✅ Schema Validation** - Validate schemas before deployment with breaking change detection
+- **🔄 Apollo Studio Integration** - Seamless sync with Apollo Studio for federated graphs
+- **📈 Prometheus Metrics** - Production-grade observability and monitoring
+- **🏥 Health Checks** - Comprehensive health endpoints for Kubernetes/Docker
+- **📝 Structured Logging** - JSON-structured logs with Pino for production debugging
+- **🧪 Comprehensive Testing** - Unit tests with Jest for core services
+- **🚀 CI/CD Ready** - GitHub Actions workflows with retry logic
 
 ---
 
 ## 📋 Table of Contents
 
-- [The Problem](#-the-problem)
-- [The Solution](#-the-solution)
+- [Quick Start](#-quick-start)
 - [Architecture](#-architecture)
-- [Key Features](#-key-features)
-- [Who Benefits](#-who-benefits)
-- [Technology Stack](#-technology-stack)
-- [Getting Started](#-getting-started)
+- [Prometheus Metrics](#-prometheus-metrics-explained)
 - [API Documentation](#-api-documentation)
+- [Development](#-development)
+- [Testing](#-testing)
 - [Deployment](#-deployment)
+- [CI/CD Integration](#-cicd-integration)
+- [Contributing](#-contributing)
 
 ---
 
-## 🚨 The Problem
+## 🚀 Quick Start
 
-In a federated GraphQL architecture with multiple microservices, teams face critical challenges:
+### Prerequisites
 
-### 1. **Schema Drift & Race Conditions**
+- **Node.js** >= 18
+- **PostgreSQL** >= 14
+- **Redis** >= 6
+- **Docker** (optional, for local development)
 
-Multiple CI/CD pipelines simultaneously pushing schema changes to Apollo Studio creates:
+### Installation
 
-- Conflicting deployments
-- Unpredictable composition failures
-- No single source of truth
+```bash
+# Clone the repository
+git clone https://github.com/abhibarkade/graphguard.git
+cd graphguard
 
-### 2. **Security Vulnerabilities**
+# Install dependencies
+yarn install
 
-- Apollo API keys hardcoded across 15+ microservice repositories
-- Exposed credentials in CI/CD configuration files
-- No centralized access control or key rotation
+# Set up environment variables
+cp .envrc.example .envrc
+# Edit .envrc with your configuration
 
-### 3. **Lack of Governance**
+# Start infrastructure (PostgreSQL + Redis)
+docker-compose up -d
 
-- No audit trail of who deployed what schema version
-- Invalid schemas reaching production
-- No rollback mechanism
-- Zero visibility into deployment history
+# Run database migrations (if applicable)
+yarn build
 
-### 4. **Operational Complexity**
-
-- Each service team manages their own Apollo integration
-- Inconsistent deployment patterns
-- Manual coordination required for breaking changes
-
----
-
-## 💡 The Solution
-
-**GraphGuard** is a centralized Schema Registry that acts as a **governance gateway** between your microservices and Apollo Studio.
-
-### How It Works
-
-Instead of services directly pushing to Apollo Studio:
-
-```
-❌ BEFORE: Service → Apollo Studio (Chaos)
-✅ AFTER:  Service → GraphGuard → Apollo Studio (Governed)
+# Start the development server
+yarn dev
 ```
 
-GraphGuard provides:
+The server will start on `http://localhost:3000`
 
-- **Single Entry Point**: All schema changes flow through one secure gateway
-- **Atomic Deployments**: Local registry and Apollo Studio stay perfectly in sync
-- **Security Layer**: API key authentication with centralized credential management
-- **Complete Audit Trail**: Every schema version, deployment, and rollback is tracked
-- **Validation Pipeline**: Schemas are validated before reaching production
+### Docker Development
+
+```bash
+# Start everything with Docker Compose
+yarn docker:dev
+
+# Rebuild and start
+yarn docker:dev:build
+
+# Stop all containers
+yarn docker:dev:down
+```
 
 ---
 
 ## 🏗️ Architecture
 
-### Before GraphGuard (The "Wild West")
+GraphGuard follows a modular, enterprise-grade architecture:
 
-![Phase 1 Architecture - Before](docs/images/architecture_before.png)
-
-**Problems:**
-
-- Services directly access Apollo Studio
-- API keys exposed in every repository
-- No coordination between deployments
-- Race conditions and conflicts
-
-### After GraphGuard (Governed & Secure)
-
-![Phase 2 Architecture - After](docs/images/architecture_after.png)
-
-**Benefits:**
-
-- Centralized governance gateway
-- Secure token-based authentication
-- Atomic transactions ensure consistency
-- Complete deployment history
-
----
-
-## 🚀 Key Features
-
-### 🔐 **Security First**
-
-- **API Key Authentication**: Custom `ApiKeyGuard` protects all mutations
-- **Secret Isolation**: Apollo credentials stored only in GraphGuard
-- **Token Exchange**: Services use revocable GraphGuard tokens
-- **Zero Trust**: Every request is authenticated and authorized
-
-### ⚛️ **Atomic Deployments**
-
-```typescript
-// Two-Phase Commit Pattern
-transaction(async (manager) => {
-  // 1. Persist to local PostgreSQL
-  const version = await manager.save(SchemaVersion, ...);
-
-  // 2. Sync with Apollo Studio
-  await apolloService.publish(schema);
-
-  // 3. Commit (or rollback on failure)
-});
+```
+src/
+├── modules/
+│   ├── schema/          # Schema management (validation, deployment)
+│   ├── deployment/      # Deployment history and tracking
+│   ├── api-key/         # API key authentication
+│   ├── apollo/          # Apollo Studio integration
+│   └── health/          # Health checks and metrics
+├── common/
+│   ├── guards/          # Authentication guards
+│   └── interceptors/    # Logging and error handling
+└── config/              # Configuration management
 ```
 
-- Local registry and Apollo Studio are always in sync
-- No orphaned records or inconsistent states
-- Automatic rollback on upstream failures
+### Technology Stack
 
-### 📜 **Complete Governance**
-
-- **Version Control**: Every schema change is versioned and tracked
-- **Deployment History**: Full audit trail with timestamps
-- **Rollback Support**: Revert to any previous schema version
-- **Validation Pipeline**: Schemas validated before deployment
-
-### ⚡ **High Performance**
-
-- Built on **Fastify** (fastest Node.js framework)
-- **Mercurius** for efficient GraphQL processing
-- **Redis** caching for frequently accessed data
-- Optimized for low-latency schema operations
+- **Framework**: NestJS with Fastify adapter
+- **Database**: PostgreSQL with TypeORM
+- **Cache**: Redis with ioredis
+- **GraphQL**: Apollo Server with code-first approach
+- **Logging**: Pino (structured JSON logging)
+- **Metrics**: Prometheus (prom-client)
+- **Testing**: Jest with comprehensive coverage
 
 ---
 
-## 👥 Who Benefits
+## 📈 Prometheus Metrics Explained
 
-### **Platform Engineering Teams**
+GraphGuard exposes production-grade Prometheus metrics for monitoring and observability. All metrics are available at `/metrics` endpoint in Prometheus exposition format.
 
-- Centralized control over schema governance
-- Reduced operational overhead
-- Standardized deployment patterns
-- Better security posture
+### Available Metrics
 
-### **Microservice Development Teams**
+#### 1. **Schema Validations Counter**
 
-- Simplified CI/CD integration (just call GraphGuard API)
-- No need to manage Apollo credentials
-- Instant schema validation feedback
-- Safe rollback capabilities
-
-### **DevOps/SRE Teams**
-
-- Complete audit trail for compliance
-- Automated deployment workflows
-- Reduced incident response time
-- Better observability
-
-### **Engineering Leadership**
-
-- Enforced governance policies
-- Reduced security risks
-- Improved developer productivity
-- Better change management
-
----
-
-## 🛠️ Technology Stack
-
-| Component      | Technology          | Why?                                                            |
-| -------------- | ------------------- | --------------------------------------------------------------- |
-| **Framework**  | NestJS              | Enterprise-grade architecture, dependency injection, modularity |
-| **Language**   | TypeScript          | Type safety for complex schema operations                       |
-| **Database**   | PostgreSQL          | ACID transactions, relational integrity for versioning          |
-| **ORM**        | TypeORM             | Transaction management, migrations, entity relationships        |
-| **Cache**      | Redis               | High-performance caching for schema metadata                    |
-| **API**        | GraphQL (Mercurius) | Fastify-based GraphQL for low-overhead processing               |
-| **HTTP**       | Fastify             | Fastest Node.js web framework                                   |
-| **Validation** | Apollo Platform API | Direct integration with Apollo Studio                           |
-| **Logging**    | Pino                | High-performance structured logging                             |
-| **Metrics**    | Prometheus          | Industry-standard metrics and monitoring                        |
-| **Testing**    | Jest                | Comprehensive unit testing with 21+ test cases                  |
-
----
-
-## 🧪 Testing & Quality
-
-### Running Tests
-
-```bash
-# Run all tests
-yarn test
-
-# Watch mode for development
-yarn test:watch
-
-# Generate coverage report
-yarn test:cov
+```
+graphguard_schema_validations_total{variant="current",status="success"} 42
 ```
 
-### Test Coverage
+- **Type**: Counter
+- **Description**: Total number of schema validation operations
+- **Labels**:
+  - `variant`: The variant ID being validated against (e.g., "current", "staging")
+  - `status`: Result of validation ("success" or "failure")
+- **Use Case**: Track validation frequency and success rates
 
-- **SchemaService**: 10 test cases covering validation, deployment, and error scenarios
-- **DeploymentService**: 7 test cases for deployment lifecycle management
-- **ApiKeyGuard**: 6 test cases for authentication and authorization
-- **Total**: 21 comprehensive unit tests with mocking and edge case coverage
+#### 2. **Schema Deployments Counter**
 
----
-
-## 📊 Observability
-
-### Health Checks
-
-```bash
-# Comprehensive health check
-GET /health
-
-# Kubernetes liveness probe
-GET /health/liveness
-
-# Kubernetes readiness probe
-GET /health/readiness
+```
+graphguard_schema_deployments_total{variant="current",schema_name="inventory",status="success"} 15
 ```
 
-### Prometheus Metrics
+- **Type**: Counter
+- **Description**: Total number of schema deployment operations
+- **Labels**:
+  - `variant`: Target variant ID
+  - `schema_name`: Name of the deployed schema/subgraph
+  - `status`: Deployment result ("success" or "failure")
+- **Use Case**: Monitor deployment frequency per schema and track failures
 
-```bash
-# Metrics endpoint for Prometheus scraping
-GET /metrics
+#### 3. **Deployment Duration Histogram**
+
+```
+graphguard_deployment_duration_seconds_bucket{variant="current",schema_name="inventory",le="0.5"} 10
+graphguard_deployment_duration_seconds_sum{variant="current",schema_name="inventory"} 3.2
+graphguard_deployment_duration_seconds_count{variant="current",schema_name="inventory"} 15
 ```
 
-**Available Metrics:**
+- **Type**: Histogram
+- **Description**: Duration of schema deployment operations in seconds
+- **Labels**:
+  - `variant`: Target variant ID
+  - `schema_name`: Name of the deployed schema
+- **Buckets**: [0.1, 0.5, 1, 2, 5, 10] seconds
+- **Use Case**: Analyze deployment performance, identify slow deployments, calculate percentiles (p50, p95, p99)
 
-- `graphguard_schema_validations_total` - Total schema validations by variant and status
-- `graphguard_schema_deployments_total` - Total deployments by variant, schema, and status
-- `graphguard_deployment_duration_seconds` - Deployment duration histogram
-- `graphguard_apollo_sync_total` - Apollo Studio sync operations
+#### 4. **Apollo Sync Counter**
 
-### Structured Logging
-
-All operations are logged with structured JSON (production) or pretty-printed (development):
-
-```json
-{
-  "level": "info",
-  "time": 1234567890,
-  "variantName": "production",
-  "schemaName": "inventory",
-  "versionLabel": "v1.2.0",
-  "msg": "Schema deployment successful"
-}
+```
+graphguard_apollo_sync_total{operation="publish",status="success"} 8
 ```
 
----
+- **Type**: Counter
+- **Description**: Total number of Apollo Studio synchronization operations
+- **Labels**:
+  - `operation`: Type of sync operation ("publish", "check", "fetch")
+  - `status`: Operation result ("success" or "failure")
+- **Use Case**: Monitor Apollo Studio integration health
 
-## 🏃‍♂️ Getting Started
+### Querying Metrics
 
-### Prerequisites
+#### Prometheus Queries
 
-- Node.js 18+
-- Docker & Docker Compose
-- PostgreSQL 14+
-- Redis 7+
+```promql
+# Schema validation success rate (last 5m)
+rate(graphguard_schema_validations_total{status="success"}[5m])
+/
+rate(graphguard_schema_validations_total[5m])
 
-### Local Development
+# 95th percentile deployment duration
+histogram_quantile(0.95,
+  rate(graphguard_deployment_duration_seconds_bucket[5m])
+)
 
-1. **Clone the repository**
+# Failed deployments in the last hour
+increase(graphguard_schema_deployments_total{status="failure"}[1h])
 
-   ```bash
-   git clone https://github.com/abhibarkade/graphguard.git
-   cd graphguard
-   ```
+# Apollo sync error rate
+rate(graphguard_apollo_sync_total{status="failure"}[5m])
+```
 
-2. **Install dependencies**
+### Grafana Dashboard
 
-   ```bash
-   yarn install
-   ```
+Create alerts and visualizations:
 
-3. **Configure environment**
-
-   ```bash
-   cp .envrc.example .envrc
-   # Edit .envrc with your Apollo credentials
-   source .envrc
-   ```
-
-4. **Start infrastructure**
-
-   ```bash
-   docker-compose up -d
-   ```
-
-5. **Run the application**
-
-   ```bash
-   # Development mode with hot-reload
-   yarn start:dev
-
-   # Production build
-   yarn build
-   yarn start:prod
-   ```
-
-6. **Access the application**
-   - GraphQL Playground: http://localhost:3000/graphql
-   - Health Check: http://localhost:3000/health
+1. **Deployment Success Rate** - Line graph showing deployment success vs failures
+2. **Validation Latency** - Heatmap of deployment duration percentiles
+3. **Schema Activity** - Bar chart of deployments per schema
+4. **Error Rate** - Alert when failure rate exceeds threshold
 
 ---
 
 ## 📚 API Documentation
 
-### Authentication
+### GraphQL API
 
-All mutations require the `X-API-KEY` header:
+GraphGuard exposes a GraphQL API for schema operations:
 
-```bash
-curl -H "X-API-KEY: your-api-key" http://localhost:3000/graphql
-```
-
-### Core Mutations
-
-#### 1. Check Schema
-
-Validate a schema against Apollo Studio before deployment:
+#### Check Schema (Validation)
 
 ```graphql
 mutation CheckSchema {
-  checkSchema(
-    variantId: "production"
-    schemaSDL: "type Query { hello: String }"
-  ) {
+  checkSchema(variantId: "current", schemaSDL: "type Query { hello: String }") {
     isValid
     errors {
-      code
       message
     }
   }
 }
 ```
 
-#### 2. Deploy Schema
-
-Deploy a new schema version:
+#### Deploy Schema
 
 ```graphql
 mutation DeploySchema {
   deploySchema(
-    variantId: "production"
+    variantId: "current"
     schemaName: "inventory"
     schemaSDL: "type Query { products: [Product] }"
-    versionLabel: "v1.2.0"
-    dryRun: false
+    versionLabel: "v1.0.0"
   ) {
     id
     status
-    startedAt
-    finishedAt
-  }
-}
-```
-
-#### 3. Rollback Schema
-
-Revert to a previous schema version:
-
-```graphql
-mutation RollbackSchema {
-  rollbackSchema(
-    variantId: "production"
-    targetSchemaVersionId: "uuid-of-previous-version"
-  ) {
-    id
-    status
-  }
-}
-```
-
-### Core Queries
-
-#### Get Active Schema
-
-```graphql
-query GetActiveSchema {
-  activeSchema(variantId: "production") {
-    id
-    schemaSDL
-    versionLabel
     createdAt
   }
 }
 ```
 
-#### Get Deployment History
+### REST Endpoints
 
-```graphql
-query GetDeployments {
-  deployments(variantId: "production") {
-    id
-    status
-    startedAt
-    finishedAt
-    schemaVersion {
-      versionLabel
-    }
-  }
-}
-```
+- `GET /health` - Basic health check
+- `GET /health/ready` - Readiness probe (checks DB + Redis)
+- `GET /metrics` - Prometheus metrics
 
 ---
 
-## 🚀 Deployment
+## 🛠️ Development
 
-### Option 1: Zero-Cost Stack (Free Forever)
+### Project Structure
 
-Perfect for side projects and portfolio demonstrations:
-
-- **Compute**: [Render](https://render.com/) (Free Tier Web Service)
-- **Database**: [Neon](https://neon.tech/) (Serverless PostgreSQL)
-- **Cache**: [Upstash](https://upstash.com/) (Serverless Redis)
-
-### Option 2: Production (Recommended)
-
-For production workloads:
-
-- **Platform**: Railway, Render (Paid), or GCP Cloud Run
-- **Database**: Managed PostgreSQL (AWS RDS, GCP Cloud SQL)
-- **Cache**: Managed Redis (AWS ElastiCache, GCP Memorystore)
+```
+graphguard/
+├── src/                    # Source code
+├── scripts/                # CI/CD scripts
+│   ├── schema-check.js     # Schema validation with retry
+│   └── schema-publish.js   # Schema deployment with retry
+├── .github/workflows/      # GitHub Actions workflows
+│   ├── ci.yml              # Main CI pipeline
+│   ├── schema-check.yml    # Reusable schema validation
+│   ├── schema-publish.yml  # Reusable schema deployment
+│   └── logistics-federation/  # Federated service workflows
+├── logistics-federation/   # Example federated services
+│   └── services/
+│       ├── inventory/
+│       ├── shipping/
+│       └── tracking/
+└── docs/                   # Documentation
+```
 
 ### Environment Variables
 
 ```bash
 # Database
-DATABASE_URL=postgresql://user:pass@host:5432/graphguard
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=graphguard
 
 # Redis
-REDIS_URL=redis://host:6379
+REDIS_HOST=localhost
+REDIS_PORT=6379
 
-# Apollo Platform
-APOLLO_KEY=service:your-graph:your-key
+# Apollo Studio (optional)
+APOLLO_KEY=your-apollo-key
 APOLLO_GRAPH_ID=your-graph-id
 
-# Application
+# Server
 PORT=3000
-NODE_ENV=production
-```
-
-### Docker Deployment
-
-```bash
-# Build image
-docker build -t graphguard:latest .
-
-# Run container
-docker run -p 3000:3000 \
-  -e DATABASE_URL=$DATABASE_URL \
-  -e REDIS_URL=$REDIS_URL \
-  -e APOLLO_KEY=$APOLLO_KEY \
-  graphguard:latest
+NODE_ENV=development
 ```
 
 ---
 
-## 📁 Project Structure
+## 🧪 Testing
 
+```bash
+# Run all tests
+yarn test
+
+# Run tests in watch mode
+yarn test:watch
+
+# Generate coverage report
+yarn test:cov
+
+# Run specific test file
+yarn test schema.service.spec.ts
 ```
-graphguard/
-├── src/
-│   ├── modules/
-│   │   ├── schema/          # Core schema versioning logic
-│   │   ├── deployment/      # Deployment orchestration
-│   │   ├── variant/         # Graph variant management
-│   │   └── organization/    # Multi-tenancy support
-│   ├── infrastructure/
-│   │   ├── apollo/          # Apollo Platform API integration
-│   │   ├── database/        # TypeORM entities & migrations
-│   │   ├── cache/           # Redis caching layer
-│   │   └── guards/          # Security middleware (ApiKeyGuard)
-│   └── config/              # Configuration management
-├── docs/
-│   └── images/              # Architecture diagrams
-├── docker-compose.yml       # Local development setup
-└── Dockerfile               # Production container
+
+### Test Coverage
+
+GraphGuard maintains comprehensive test coverage for:
+
+- ✅ SchemaService - Schema validation and deployment logic
+- ✅ DeploymentService - Deployment history and tracking
+- ✅ ApiKeyGuard - Authentication and authorization
+- ✅ Health checks - Database and Redis connectivity
+
+---
+
+## 🚀 Deployment
+
+### Production Checklist
+
+- [ ] Set `NODE_ENV=production`
+- [ ] Configure production database (managed PostgreSQL)
+- [ ] Configure production Redis (managed Redis)
+- [ ] Set up API keys for authentication
+- [ ] Configure Apollo Studio credentials (if using)
+- [ ] Set up Prometheus scraping
+- [ ] Configure health check endpoints in load balancer
+- [ ] Enable structured logging aggregation
+- [ ] Set up alerts for critical metrics
+
+### Docker Production
+
+```dockerfile
+# Build
+docker build -t graphguard:latest .
+
+# Run
+docker run -p 3000:3000 \
+  -e DATABASE_HOST=your-db-host \
+  -e REDIS_HOST=your-redis-host \
+  graphguard:latest
 ```
+
+### Kubernetes Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graphguard
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: graphguard
+          image: graphguard:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: graphguard-secrets
+                  key: db-host
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+```
+
+---
+
+## 🔄 CI/CD Integration
+
+GraphGuard includes production-ready CI/CD workflows with automatic retry logic.
+
+### Schema Validation in CI
+
+The `schema-check.js` script validates schemas with automatic retries:
+
+```yaml
+# .github/workflows/my-service-ci.yml
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: yarn install
+      - run: |
+          node scripts/schema-check.js \
+            --schema-path ./schema.graphql \
+            --variant-id current \
+            --api-key ${{ secrets.GRAPHGUARD_API_KEY }} \
+            --endpoint ${{ secrets.GRAPHGUARD_ENDPOINT }}
+```
+
+### Automatic Schema Deployment
+
+On merge to main, schemas are automatically deployed:
+
+```yaml
+# .github/workflows/my-service-ci.yml
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: yarn install
+      - run: |
+          node scripts/schema-publish.js \
+            --schema-path ./schema.graphql \
+            --schema-name my-service \
+            --variant-id current \
+            --api-key ${{ secrets.GRAPHGUARD_API_KEY }} \
+            --endpoint ${{ secrets.GRAPHGUARD_ENDPOINT }} \
+            --version-label ${{ github.sha }}
+```
+
+### Retry Logic
+
+Both scripts include exponential backoff retry (3 attempts):
+
+- Initial delay: 1 second
+- Backoff factor: 2x
+- Max delay: 10 seconds
+- Total timeout: 30 seconds per attempt
+
+---
+
+## 📖 Example: Federated Services
+
+The `logistics-federation/` directory contains example microservices demonstrating GraphGuard integration:
+
+- **Inventory Service** - Product inventory management
+- **Shipping Service** - Order shipping and tracking
+- **Tracking Service** - Package tracking and updates
+
+Each service has its own CI workflow that:
+
+1. Validates schema on PRs
+2. Deploys schema on merge to main
+3. Uses retry logic for resilience
 
 ---
 
 ## 🤝 Contributing
 
-This project serves as a reference implementation for federated GraphQL governance. Contributions are welcome!
+Contributions are welcome! Please follow these guidelines:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Write tests for new features
+- Follow existing code style (NestJS conventions)
+- Update documentation for API changes
+- Add comments for complex logic
+- Ensure CI passes before requesting review
 
 ---
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-## 👨‍💻 Author
-
-**Abhi Barkade**
-
-- GitHub: [@abhibarkade](https://github.com/abhibarkade)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
 ## 🙏 Acknowledgments
 
-Built with inspiration from:
-
-- Apollo Federation best practices
-- Netflix's schema registry patterns
-- Distributed systems transaction patterns
+- Built with [NestJS](https://nestjs.com/)
+- Powered by [Fastify](https://www.fastify.io/)
+- GraphQL by [Apollo Server](https://www.apollographql.com/docs/apollo-server/)
+- Metrics by [prom-client](https://github.com/siimon/prom-client)
+- Logging by [Pino](https://getpino.io/)
 
 ---
 
-_GraphGuard - Bringing governance, security, and reliability to federated GraphQL architectures._
+## 📞 Support
+
+For questions, issues, or feature requests:
+
+- Open an [issue](https://github.com/abhibarkade/graphguard/issues)
+- Check existing [documentation](./docs/)
+- Review [example implementations](./logistics-federation/)
+
+---
+
+**Made with ❤️ for the GraphQL community**
