@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
 import { Deployment } from '../../infrastructure/database/entities/deployment.entity';
 import { DeploymentStatus } from '../../graphql/enums/deployment-status.enum';
 
@@ -18,18 +18,20 @@ export class DeploymentService {
     });
   }
 
-  async create(variantId: string, schemaVersionId: string): Promise<Deployment> {
-    const deployment = this.deploymentRepo.create({
+  async create(variantId: string, schemaVersionId: string, manager?: EntityManager): Promise<Deployment> {
+    const repo = manager ? manager.getRepository(Deployment) : this.deploymentRepo;
+    const deployment = repo.create({
       variantId,
       schemaVersionId,
       status: DeploymentStatus.PENDING,
       startedAt: new Date(),
     });
-    return this.deploymentRepo.save(deployment);
+    return repo.save(deployment);
   }
 
-  async updateStatus(id: string, status: DeploymentStatus, failureReason?: string): Promise<Deployment> {
-    await this.deploymentRepo.update(id, {
+  async updateStatus(id: string, status: DeploymentStatus, failureReason?: string, manager?: EntityManager): Promise<Deployment> {
+    const repo = manager ? manager.getRepository(Deployment) : this.deploymentRepo;
+    await repo.update(id, {
       status,
       failureReason,
       finishedAt: new Date(),

@@ -4,6 +4,8 @@ import { Deployment } from '../../infrastructure/database/entities/deployment.en
 import { SchemaVersion } from '../../infrastructure/database/entities/schema-version.entity';
 import { Schema } from '../../infrastructure/database/entities/schema.entity';
 import { SchemaService } from './schema.service';
+import { UseGuards } from '@nestjs/common';
+import { ApiKeyGuard } from '../../infrastructure/guards/api-key.guard';
 
 @Resolver(() => SchemaVersion)
 export class SchemaResolver {
@@ -25,6 +27,7 @@ export class SchemaResolver {
   }
 
   @Mutation(() => SchemaValidationResult)
+  @UseGuards(ApiKeyGuard)
   async checkSchema(
     @Args('variantId', { type: () => ID }) variantId: string,
     @Args('schemaSDL') schemaSDL: string,
@@ -33,6 +36,7 @@ export class SchemaResolver {
   }
 
   @Mutation(() => Deployment)
+  @UseGuards(ApiKeyGuard)
   async deploySchema(
     @Args('variantId', { type: () => ID }) variantId: string,
     @Args('schemaName') schemaName: string,
@@ -44,6 +48,7 @@ export class SchemaResolver {
   }
 
   @Mutation(() => Deployment)
+  @UseGuards(ApiKeyGuard)
   async rollbackSchema(
     @Args('variantId', { type: () => ID }) variantId: string,
     @Args('targetSchemaVersionId', { type: () => ID }) targetSchemaVersionId: string,
@@ -54,7 +59,6 @@ export class SchemaResolver {
   @ResolveField(() => Schema)
   async schema(@Parent() version: SchemaVersion): Promise<Schema> {
     if (version.schema) return version.schema;
-    // Note: In a real app we might need to inject or use a dataloader
     return null; 
   }
 

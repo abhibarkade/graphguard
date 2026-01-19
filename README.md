@@ -1,145 +1,72 @@
-# GraphGuard
+# GraphGuard 🛡️
 
-GraphGuard is a high-performance, enterprise-grade GraphQL Schema Registry built with NestJS, Fastify, and TypeORM. It provides a robust boundary for managing schema deployments across organizations, projects, and customers.
+**A Distributed Schema Registry & Governance Gateway for Federated GraphQL Microservices.**
 
-## 🚀 Quick Start
-
-### 1. Prerequisites
-
-- **Node.js**: v18 or higher
-- **Docker & Colima**: For PostgreSQL and Redis infrastructure.
-
-### 2. Setup Infrastructure
-
-```bash
-# Start Docker services via Colima
-colima start
-yarn docker:infra
-```
-
-### 3. Install & Run
-
-```bash
-yarn install
-yarn dev
-```
-
-The app will be running at [http://localhost:3000](http://localhost:3000).
-Access the **Apollo Sandbox** (Explorer) at [http://localhost:3000/graphql](http://localhost:3000/graphql).
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/abhibarkade/graphguard)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tech Stack: NestJS](https://img.shields.io/badge/Framework-NestJS-red)](https://nestjs.com/)
+[![Database: PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue)](https://www.postgresql.org/)
 
 ---
 
-## 📖 Step-by-Step Usage Guide
+## 🏗️ Technical Architecture
 
-Follow these steps in the **Apollo Sandbox** to set up your registry from scratch.
+GraphGuard acts as the **central authority** for all GraphQL schema changes in a microservices ecosystem. It orchestrates the validation, persistence, and synchronization of schemas between local services and the Apollo Platform.
 
-### Step 1: Create an Organization
+![GraphGuard Architecture](docs/images/architecture_after.png)
 
-An organization is the top-level owner of all projects.
+## 🚀 Key Features
 
-```graphql
-mutation {
-  createOrganization(name: "Acme Corp") {
-    id
-    name
-  }
-}
-```
+- **🛡️ Secure Gateway**: Implements `ApiKeyGuard` relative to RBAC, ensuring only authorized CI pipelines can modify the registry.
+- **⚛️ Atomic Deployments**: Utilizes distributed transaction patterns (Two-Phase Commit simulation) to ensure local registry state and Apollo Studio are never out of sync.
+- **📜 Strict Governance**: Maintains a complete audit trail of every schema version, preventing "silent drift" in production.
+- **⚡ High Performance**: Built on **Fastify** + **Mercurius** for low-overhead schema composition validation.
 
-### Step 2: Create a Project
+## 🛠️ Technology Stack
 
-A project represents a specific API or service within your organization.
+- **Core**: NestJS (Node.js), TypeScript
+- **Data**: PostgreSQL, TypeORM, Redis (Caching)
+- **API**: GraphQL (Code-First), REST (Health Checks)
+- **DevOps**: Docker, GitHub Actions, Secret Management
 
-```graphql
-mutation {
-  createProject(organizationId: "PASTE_ORG_ID_HERE", name: "Billing API") {
-    id
-    name
-  }
-}
-```
+## 📂 Project Structure
 
-### Step 3: Create a Customer
+- `src/modules/schema`: Core logic for versioning and deployment.
+- `src/infrastructure/apollo`: Custom integration with Apollo Platform APIs.
+- `src/infrastructure/guards`: Security middleware implementation.
+- `TECHNICAL_CASE_STUDY.md`: **[Deep Dive]** Read the full architectural case study.
 
-A customer represents an external tenant or consumer of your project.
+## 🏃‍♂️ Running Locally
 
-```graphql
-mutation {
-  createCustomer(
-    projectId: "PASTE_PROJECT_ID_HERE"
-    name: "Client A"
-    externalId: "client-a"
-  ) {
-    id
-    name
-  }
-}
-```
+1. **Clone & Install**
 
-### Step 4: Create a Variant
+   ```bash
+   git clone https://github.com/abhibarkade/graphguard.git
+   cd graphguard
+   yarn install
+   ```
 
-A variant is an isolation boundary for environments like `production`, `staging`, or `dev`.
+2. **Start Infrastructure (Docker)**
 
-```graphql
-mutation {
-  createVariant(customerId: "PASTE_CUSTOMER_ID_HERE", name: "production") {
-    id
-    name
-  }
-}
-```
+   ```bash
+   docker-compose up -d postgres redis
+   ```
 
-### Step 5: Deploy a Schema
+3. **Run Application**
 
-Upload and activate a schema version for your variant.
+   ```bash
+   # Development Mode
+   yarn start:dev
+   ```
 
-```graphql
-mutation {
-  deploySchema(
-    variantId: "PASTE_VARIANT_ID_HERE"
-    schemaName: "main"
-    schemaSDL: "type Query { hello: String }"
-    versionLabel: "v1.0.0"
-  ) {
-    id
-    status
-    startedAt
-  }
-}
-```
+4. **Access the Graph**
+   - **Playground**: `http://localhost:3000/graphql`
+   - **Health**: `http://localhost:3000/health`
 
-### Step 6: Verify Active Schema
+## 🤝 Contribution
 
-Check the current active schema for a variant.
-
-```graphql
-query {
-  variant(id: "PASTE_VARIANT_ID_HERE") {
-    name
-    schemas {
-      name
-      activeVersion {
-        sdl
-        versionLabel
-      }
-    }
-  }
-}
-```
+This project serves as a reference implementation for governing Federated GraphQL Architectures.
 
 ---
 
-## 🛠 Tech Stack
-
-- **Framework**: [NestJS](https://nestjs.com/)
-- **HTTP**: [Fastify](https://www.fastify.io/)
-- **GraphQL**: [Apollo Server](https://www.apollographql.com/docs/apollo-server/)
-- **Database**: [PostgreSQL](https://www.postgresql.org/) with [TypeORM](https://typeorm.io/)
-- **Cache**: [Redis](https://redis.io/)
-- **Design**: Code-first GraphQL with modern TypeScript decorators.
-
----
-
-## 📜 License
-
-MIT
+_Created by Abhi Barkade_

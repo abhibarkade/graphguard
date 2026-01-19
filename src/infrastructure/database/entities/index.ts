@@ -5,3 +5,4 @@ export * from './variant.entity';
 export * from './schema.entity';
 export * from './schema-version.entity';
 export * from './deployment.entity';
+export * from './api-key.entity';
