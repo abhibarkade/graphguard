@@ -193,6 +193,79 @@ transaction(async (manager) => {
 | **API**        | GraphQL (Mercurius) | Fastify-based GraphQL for low-overhead processing               |
 | **HTTP**       | Fastify             | Fastest Node.js web framework                                   |
 | **Validation** | Apollo Platform API | Direct integration with Apollo Studio                           |
+| **Logging**    | Pino                | High-performance structured logging                             |
+| **Metrics**    | Prometheus          | Industry-standard metrics and monitoring                        |
+| **Testing**    | Jest                | Comprehensive unit testing with 21+ test cases                  |
+
+---
+
+## 🧪 Testing & Quality
+
+### Running Tests
+
+```bash
+# Run all tests
+yarn test
+
+# Watch mode for development
+yarn test:watch
+
+# Generate coverage report
+yarn test:cov
+```
+
+### Test Coverage
+
+- **SchemaService**: 10 test cases covering validation, deployment, and error scenarios
+- **DeploymentService**: 7 test cases for deployment lifecycle management
+- **ApiKeyGuard**: 6 test cases for authentication and authorization
+- **Total**: 21 comprehensive unit tests with mocking and edge case coverage
+
+---
+
+## 📊 Observability
+
+### Health Checks
+
+```bash
+# Comprehensive health check
+GET /health
+
+# Kubernetes liveness probe
+GET /health/liveness
+
+# Kubernetes readiness probe
+GET /health/readiness
+```
+
+### Prometheus Metrics
+
+```bash
+# Metrics endpoint for Prometheus scraping
+GET /metrics
+```
+
+**Available Metrics:**
+
+- `graphguard_schema_validations_total` - Total schema validations by variant and status
+- `graphguard_schema_deployments_total` - Total deployments by variant, schema, and status
+- `graphguard_deployment_duration_seconds` - Deployment duration histogram
+- `graphguard_apollo_sync_total` - Apollo Studio sync operations
+
+### Structured Logging
+
+All operations are logged with structured JSON (production) or pretty-printed (development):
+
+```json
+{
+  "level": "info",
+  "time": 1234567890,
+  "variantName": "production",
+  "schemaName": "inventory",
+  "versionLabel": "v1.2.0",
+  "msg": "Schema deployment successful"
+}
+```
 
 ---
 
