@@ -16,6 +16,7 @@ import { VariantModule } from './modules/variant/variant.module';
 import { SchemaModule } from './modules/schema/schema.module';
 import { DeploymentModule } from './modules/deployment/deployment.module';
 import { ApolloInfrastructureModule } from './infrastructure/apollo/apollo.module';
+import { PinoLoggerModule } from './infrastructure/logging/pino-logger.module';
 
 
 @Module({
@@ -51,6 +52,7 @@ import { ApolloInfrastructureModule } from './infrastructure/apollo/apollo.modul
     // Infrastructure
     DatabaseModule,
     CacheModule,
+    PinoLoggerModule,
 
     // Feature Modules
     HealthModule,

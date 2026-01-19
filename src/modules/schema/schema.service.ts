@@ -9,6 +9,7 @@ import { DeploymentStatus } from '../../graphql/enums/deployment-status.enum';
 import { SchemaValidationResult } from '../../graphql/models/validation.model';
 import { DeploymentService } from '../deployment/deployment.service';
 import { ApolloService } from '../../infrastructure/apollo/apollo.service';
+import { PinoLogger } from 'nestjs-pino';
 
 
 @Injectable()
@@ -24,7 +25,10 @@ export class SchemaService {
     private variantRepo: Repository<Variant>,
     private deploymentService: DeploymentService,
     private apolloService: ApolloService,
-  ) {}
+    private readonly pinoLogger: PinoLogger,
+  ) {
+    this.pinoLogger.setContext(SchemaService.name);
+  }
 
   async getActiveSchema(variantId: string): Promise<SchemaVersion | null> {
     const schema = await this.schemaRepo.findOne({
@@ -46,9 +50,12 @@ export class SchemaService {
   }
 
   async checkSchema(variantName: string, schemaSDL: string): Promise<SchemaValidationResult> {
+    this.pinoLogger.info({ variantName, schemaLength: schemaSDL.length }, 'Starting schema validation');
+    
     // 1. Internal validation (basic)
     const isValid = schemaSDL.trim().length > 0;
     if (!isValid) {
+      this.pinoLogger.warn({ variantName }, 'Schema validation failed: empty schema');
       return {
         isValid: false,
         errors: [{ code: 'EMPTY_SCHEMA', message: 'Schema SDL cannot be empty' }],
@@ -57,19 +64,21 @@ export class SchemaService {
 
     // 2. Apollo Platform Check
     try {
-      // We use 'inventory' as a default for testing, but ideally this should be passed
       const apolloCheck = await this.apolloService.checkSchema(variantName, 'inventory', schemaSDL);
       if (!apolloCheck.isValid && apolloCheck.errors.length > 0) {
+        this.pinoLogger.warn({ variantName, errors: apolloCheck.errors }, 'Apollo schema validation failed');
          return {
           isValid: false,
           errors: apolloCheck.errors.map(e => ({ code: 'APOLLO_ERROR', message: e.message })),
         };
       }
+      this.pinoLogger.info({ variantName }, 'Schema validation successful');
       return {
         isValid: apolloCheck.isValid,
         errors: [],
       };
     } catch (e) {
+      this.pinoLogger.error({ variantName, error: e.message }, 'Apollo Platform unavailable');
       return {
         isValid: false,
         errors: [{ code: 'APOLLO_UNAVAILABLE', message: 'Failed to reach Apollo Studio' }],
@@ -84,10 +93,10 @@ export class SchemaService {
     versionLabel: string,
     dryRun: boolean,
   ): Promise<Deployment> {
-    this.logger.debug(`Deploying schema for variant: ${variantIdOrName}`);
+    this.pinoLogger.info({ variantIdOrName, schemaName, versionLabel, dryRun }, 'Starting schema deployment');
+    
     // Resolve variant first
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(variantIdOrName);
-    this.logger.debug(`Is UUID: ${isUuid}`);
     const variant = await this.variantRepo.findOne({
       where: isUuid 
         ? [{ id: variantIdOrName as any }, { name: variantIdOrName }]
@@ -95,8 +104,11 @@ export class SchemaService {
     });
 
     if (!variant) {
+      this.pinoLogger.error({ variantIdOrName }, 'Variant not found');
       throw new Error(`Variant not found: ${variantIdOrName}`);
     }
+    
+    this.pinoLogger.debug({ variantId: variant.id, variantName: variant.name }, 'Variant resolved successfully');
 
     return this.schemaRepo.manager.transaction(async (manager) => {
       // 1. Find or create logical schema
