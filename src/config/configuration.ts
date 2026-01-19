@@ -8,4 +8,8 @@ export default () => ({
   },
   nodeEnv: process.env.NODE_ENV || 'development',
   logLevel: process.env.LOG_LEVEL || 'info',
+  apollo: {
+    key: process.env.APOLLO_KEY,
+    graphId: process.env.APOLLO_GRAPH_ID,
+  },
 });

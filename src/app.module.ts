@@ -15,6 +15,8 @@ import { CustomerModule } from './modules/customer/customer.module';
 import { VariantModule } from './modules/variant/variant.module';
 import { SchemaModule } from './modules/schema/schema.module';
 import { DeploymentModule } from './modules/deployment/deployment.module';
+import { ApolloInfrastructureModule } from './infrastructure/apollo/apollo.module';
+
 
 @Module({
   imports: [
@@ -58,6 +60,7 @@ import { DeploymentModule } from './modules/deployment/deployment.module';
     VariantModule,
     SchemaModule,
     DeploymentModule,
+    ApolloInfrastructureModule,
   ],
 })
 export class AppModule {}

@@ -4,12 +4,13 @@ import { SchemaService } from './schema.service';
 import { SchemaResolver } from './schema.resolver';
 import { Schema } from '../../infrastructure/database/entities/schema.entity';
 import { SchemaVersion } from '../../infrastructure/database/entities/schema-version.entity';
+import { Variant } from '../../infrastructure/database/entities/variant.entity';
 import { DeploymentModule } from '../deployment/deployment.module';
 import { VariantModule } from '../variant/variant.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Schema, SchemaVersion]),
+    TypeOrmModule.forFeature([Schema, SchemaVersion, Variant]),
     forwardRef(() => DeploymentModule),
     forwardRef(() => VariantModule),
   ],
