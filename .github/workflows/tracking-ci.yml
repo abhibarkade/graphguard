@@ -1,0 +1,37 @@
+name: Tracking Service CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "logistics-federation/services/tracking/**"
+      - ".github/workflows/tracking-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "logistics-federation/services/tracking/**"
+      - ".github/workflows/tracking-ci.yml"
+
+jobs:
+  check-schema:
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/schema-check.yml
+    with:
+      schema_path: "logistics-federation/services/tracking/schema.graphql"
+      variant_id: "current"
+      schema_name: "tracking"
+    secrets:
+      GRAPHGUARD_API_KEY: ${{ secrets.GRAPHGUARD_API_KEY }}
+      GRAPHGUARD_ENDPOINT: ${{ secrets.GRAPHGUARD_ENDPOINT }}
+
+  publish-schema:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/schema-publish.yml
+    with:
+      schema_path: "logistics-federation/services/tracking/schema.graphql"
+      schema_name: "tracking"
+      variant_id: "current"
+      version_label: ${{ github.sha }}
+    secrets:
+      GRAPHGUARD_API_KEY: ${{ secrets.GRAPHGUARD_API_KEY }}
+      GRAPHGUARD_ENDPOINT: ${{ secrets.GRAPHGUARD_ENDPOINT }}

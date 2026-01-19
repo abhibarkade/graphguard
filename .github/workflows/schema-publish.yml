@@ -1,0 +1,54 @@
+name: Schema Publish
+
+on:
+  workflow_call:
+    inputs:
+      schema_path:
+        required: true
+        type: string
+        description: "Path to the schema file"
+      schema_name:
+        required: true
+        type: string
+        description: "Name of the schema/subgraph"
+      variant_id:
+        required: true
+        type: string
+        description: "Target variant ID"
+      version_label:
+        required: true
+        type: string
+        description: "Version label for the deployment"
+    secrets:
+      GRAPHGUARD_API_KEY:
+        required: true
+      GRAPHGUARD_ENDPOINT:
+        required: true
+
+jobs:
+  publish-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Install Dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run Schema Publish
+        run: |
+          node scripts/schema-publish.js \
+            --schema-path "${{ inputs.schema_path }}" \
+            --schema-name "${{ inputs.schema_name }}" \
+            --variant-id "${{ inputs.variant_id }}" \
+            --api-key "${{ secrets.GRAPHGUARD_API_KEY }}" \
+            --endpoint "${{ secrets.GRAPHGUARD_ENDPOINT }}" \
+            --version-label "${{ inputs.version_label }}"
+        env:
+          NODE_ENV: production

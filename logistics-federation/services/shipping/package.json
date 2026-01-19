@@ -1,0 +1,12 @@
+{
+  "name": "@logistics/shipping",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "ts-node index.ts",
+    "dev": "ts-node index.ts"
+  },
+  "dependencies": {
+    "fastify": "^5.2.1"
+  }
+}

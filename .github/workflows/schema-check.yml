@@ -1,0 +1,48 @@
+name: Schema Check
+
+on:
+  workflow_call:
+    inputs:
+      schema_path:
+        required: true
+        type: string
+        description: "Path to the schema file"
+      variant_id:
+        required: true
+        type: string
+        description: "Target variant ID"
+      schema_name:
+        required: true
+        type: string
+        description: "Name of the schema/subgraph"
+    secrets:
+      GRAPHGUARD_API_KEY:
+        required: true
+      GRAPHGUARD_ENDPOINT:
+        required: true
+
+jobs:
+  check-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Install Dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run Schema Check
+        run: |
+          node scripts/schema-check.js \
+            --schema-path "${{ inputs.schema_path }}" \
+            --variant-id "${{ inputs.variant_id }}" \
+            --api-key "${{ secrets.GRAPHGUARD_API_KEY }}" \
+            --endpoint "${{ secrets.GRAPHGUARD_ENDPOINT }}"
+        env:
+          NODE_ENV: production

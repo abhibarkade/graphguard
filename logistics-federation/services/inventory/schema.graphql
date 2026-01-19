@@ -1,0 +1,12 @@
+type Product {
+  id: ID!
+  sku: String!
+  name: String!
+  stockLevel: Int!
+  warehouseLocation: String!
+}
+
+type Query {
+  product(id: ID!): Product
+  allProducts: [Product!]!
+}

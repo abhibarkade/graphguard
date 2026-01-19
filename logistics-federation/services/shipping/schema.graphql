@@ -1,0 +1,20 @@
+type Shipment {
+  id: ID!
+  trackingNumber: String!
+  carrier: String!
+  status: ShipmentStatus!
+  estimatedDelivery: String
+}
+
+enum ShipmentStatus {
+  PENDING
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+type Query {
+  shipment(id: ID!): Shipment
+  activeShipments: [Shipment!]!
+}

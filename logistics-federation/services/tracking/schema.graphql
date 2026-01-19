@@ -1,0 +1,12 @@
+type TrackingEvent {
+  id: ID!
+  timestamp: String!
+  location: String!
+  description: String!
+  shipmentId: ID!
+}
+
+type Query {
+  trackingEvents(shipmentId: ID!): [TrackingEvent!]!
+  latestEvent(shipmentId: ID!): TrackingEvent
+}

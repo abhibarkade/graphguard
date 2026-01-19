@@ -1,0 +1,45 @@
+name: Tracking Service CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/tracking/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "services/tracking/**"
+
+jobs:
+  validate-and-publish:
+    runs-on: ubuntu-latest
+    env:
+      APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
+      GRAPH_ID: logistics-graph # Update with your graph ID
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Subgraph Check (PR only)
+        if: github.event_name == 'pull_request'
+        run: |
+          curl -X POST http://localhost:3000/graphql \
+          -H "Content-Type: application/json" \
+          -H "X-API-KEY: ${{ secrets.GRAPHGUARD_API_KEY }}" \
+          -d @- <<EOF
+          {
+            "query": "mutation { checkSchema(variantId: \"current\", schemaSDL: \"$(cat services/tracking/schema.graphql | sed 's/\"/\\\"/g' | tr '\n' ' ')\") { isValid errors { message } } }"
+          }
+          EOF
+
+      - name: Subgraph Publish (Main only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          curl -X POST http://localhost:3000/graphql \
+          -H "Content-Type: application/json" \
+          -H "X-API-KEY: ${{ secrets.GRAPHGUARD_API_KEY }}" \
+          -d @- <<EOF
+          {
+            "query": "mutation { deploySchema(variantId: \"current\", schemaName: \"tracking\", schemaSDL: \"$(cat services/tracking/schema.graphql | sed 's/\"/\\\"/g' | tr '\n' ' ')\", versionLabel: \"${{ github.sha }}\") { id status } }"
+          }
+          EOF
